@@ -2,7 +2,7 @@
 
 static NSString* const kDirectory = @"FlutterPluginPdfViewer";
 static NSString* const kFilePath = @"file:///";
-static NSString* kFileName = @"";
+NSString* kFileName = @"";
 
 @implementation FlutterPluginPdfViewerPlugin
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
@@ -68,6 +68,7 @@ static NSString* kFileName = @"";
 
 -(NSString*)getPage:(NSString *)url ofPage:(size_t)pageNumber
 {
+    kFileName = [[NSUUID UUID] UUIDString];
     NSURL * sourcePDFUrl;
     if([url containsString:kFilePath]){
         sourcePDFUrl = [NSURL URLWithString:url];
