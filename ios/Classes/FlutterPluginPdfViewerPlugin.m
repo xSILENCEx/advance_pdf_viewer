@@ -80,9 +80,10 @@ static NSString* const kFilePath = @"file:///";
         pageNumber = numberOfPages;
     }
     NSString *fileName = [NSString stringWithFormat:@"%@_%ld", [self getmd5WithString:url], pageNumber];
-    NSString *imageFilePath = [temporaryDirectory stringByAppendingPathComponent:fileName];
+    NSString *imageFilePath = [filePathAndDirectory stringByAppendingPathComponent:fileName];
     
     if ([[NSFileManager defaultManager] fileExistsAtPath:imageFilePath]) {
+        CGPDFDocumentRelease(SourcePDFDocument);
         return imageFilePath;
     }
 
@@ -92,13 +93,14 @@ static NSString* const kFilePath = @"file:///";
                                                          error:&error])
     {
         NSLog(@"Create directory error: %@", error);
+        CGPDFDocumentRelease(SourcePDFDocument);
         return nil;
     }
     CGPDFPageRef SourcePDFPage = CGPDFDocumentGetPage(SourcePDFDocument, pageNumber);
     CGRect sourceRect = CGPDFPageGetBoxRect(SourcePDFPage, kCGPDFMediaBox);
     // Calculate resolution
     // Set DPI to 300
-    CGFloat dpi = 300.0 / 72.0;
+    CGFloat dpi = 1;
     CGFloat width = sourceRect.size.width * dpi;
     CGFloat height = sourceRect.size.height * dpi;
     UIGraphicsBeginImageContext(CGSizeMake(width, height));
@@ -113,10 +115,12 @@ static NSString* const kFilePath = @"file:///";
     CGContextScaleCTM(currentContext, dpi, -dpi);
     CGContextSaveGState(currentContext);
     CGContextDrawPDFPage (currentContext, SourcePDFPage);
+    
     CGContextRestoreGState(currentContext);
     UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
-    [UIImagePNGRepresentation(image) writeToFile: imageFilePath atomically:YES];
+    CGPDFDocumentRelease(SourcePDFDocument);
+    [UIImageJPEGRepresentation(image, 0.7) writeToFile: imageFilePath atomically:YES];
     return imageFilePath;
 }
 
@@ -125,7 +129,7 @@ static NSString* const kFilePath = @"file:///";
     unsigned char digist[CC_MD5_DIGEST_LENGTH]; //CC_MD5_DIGEST_LENGTH = 16
     CC_MD5(original_str, (uint)strlen(original_str), digist);
     NSMutableString* outPutStr = [NSMutableString stringWithCapacity:10];
-    for(int  i =0; i<CC_MD5_DIGEST_LENGTH;i++){
+    for(int i = 0; i < CC_MD5_DIGEST_LENGTH; i++){
         [outPutStr appendFormat:@"%02x", digist[i]];//小写x表示输出的是小写MD5，大写X表示输出的是大写MD5
     }
     return [outPutStr lowercaseString];
