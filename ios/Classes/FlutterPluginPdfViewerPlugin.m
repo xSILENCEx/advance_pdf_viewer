@@ -100,7 +100,7 @@ static NSString* const kFilePath = @"file:///";
     CGRect sourceRect = CGPDFPageGetBoxRect(SourcePDFPage, kCGPDFMediaBox);
     // Calculate resolution
     // Set DPI to 300
-    CGFloat dpi = 1;
+    CGFloat dpi = 2;
     CGFloat width = sourceRect.size.width * dpi;
     CGFloat height = sourceRect.size.height * dpi;
     UIGraphicsBeginImageContext(CGSizeMake(width, height));
