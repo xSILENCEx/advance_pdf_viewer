@@ -4,7 +4,6 @@ import 'package:advance_pdf_viewer/src/zoomable_widget.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/painting.dart';
 
-
 /// A class to represent PDF page
 /// [imgPath], path of the image (pdf page)
 /// [num], page number
@@ -35,7 +34,7 @@ class PDFPage extends StatefulWidget {
   _PDFPageState createState() => _PDFPageState();
 }
 
-class _PDFPageState extends State<PDFPage> {
+class _PDFPageState extends State<PDFPage> with AutomaticKeepAliveClientMixin {
   late ImageProvider provider;
 
   @override
@@ -62,6 +61,8 @@ class _PDFPageState extends State<PDFPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     return Container(
         decoration: null,
         child: ZoomableWidget(
@@ -73,4 +74,7 @@ class _PDFPageState extends State<PDFPage> {
           child: Image(image: provider),
         ));
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }
