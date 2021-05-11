@@ -1,8 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
-import 'package:advance_pdf_viewer/src/zoomable_widget.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter/painting.dart';
 
 /// A class to represent PDF page
 /// [imgPath], path of the image (pdf page)
@@ -20,61 +18,39 @@ class PDFPage extends StatefulWidget {
   final double? minScale;
   final double? maxScale;
   final double? panLimit;
+
   PDFPage(
     this.imgPath,
     this.num, {
     this.onZoomChanged,
-    this.zoomSteps = 3,
-    this.minScale = 1.0,
-    this.maxScale = 5.0,
-    this.panLimit = 1.0,
+    this.zoomSteps,
+    this.minScale,
+    this.maxScale,
+    this.panLimit,
   });
 
   @override
   _PDFPageState createState() => _PDFPageState();
 }
 
-class _PDFPageState extends State<PDFPage> with AutomaticKeepAliveClientMixin {
-  late ImageProvider provider;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _repaint();
-  }
-
+class _PDFPageState extends State<PDFPage> {
   @override
   void didUpdateWidget(PDFPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.imgPath != widget.imgPath) {
-      _repaint();
+      setState(() {});
     }
-  }
-
-  _repaint() {
-    provider = FileImage(File(widget.imgPath));
-    final resolver = provider.resolve(createLocalImageConfiguration(context));
-    resolver.addListener(ImageStreamListener((imgInfo, alreadyPainted) {
-      if (!alreadyPainted) setState(() {});
-    }));
   }
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-
-    return Container(
-        decoration: null,
-        child: ZoomableWidget(
-          onZoomChanged: widget.onZoomChanged,
-          zoomSteps: widget.zoomSteps ?? 3,
-          minScale: widget.minScale ?? 1.0,
-          panLimit: widget.panLimit ?? 1.0,
-          maxScale: widget.maxScale ?? 5.0,
-          child: Image(image: provider),
-        ));
+    return ClipRect(
+      child: InteractiveViewer(
+        maxScale: widget.maxScale ?? 3,
+        minScale: widget.minScale ?? 0.5,
+        boundaryMargin: EdgeInsets.all(MediaQuery.of(context).size.width),
+        child: Image.file(File(widget.imgPath)),
+      ),
+    );
   }
-
-  @override
-  bool get wantKeepAlive => true;
 }

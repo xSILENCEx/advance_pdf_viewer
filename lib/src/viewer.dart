@@ -85,97 +85,88 @@ class PDFViewer extends StatefulWidget {
 }
 
 class _PDFViewerState extends State<PDFViewer> {
-  bool _isLoading = true;
-  late int _pageNumber;
-  bool _swipeEnabled = true;
-  late List<PDFPage?> _pages;
-  late PageController _pageController;
+  final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(true);
+  final ValueNotifier<int> _pageNumber = ValueNotifier<int>(1);
   final Duration animationDuration = Duration(milliseconds: 200);
   final Curve animationCurve = Curves.easeIn;
+
+  final ValueNotifier<List<PDFPage?>?> _pages = ValueNotifier<List<PDFPage?>?>(null);
+  late PageController _pageController;
 
   @override
   void initState() {
     super.initState();
-    _pages = List<PDFPage?>.generate(widget.document.count, (index) => null);
+    _pages.value = List<PDFPage?>.generate(widget.document.count, (index) => null);
     _pageController = widget.controller ?? PageController();
-    _pageNumber = _pageController.initialPage + 1;
+    _pageNumber.value = _pageController.initialPage + 1;
 
     if (!widget.lazyLoad)
       widget.document.preloadPages(
-        onZoomChanged: _onZoomChanged,
         zoomSteps: widget.zoomSteps,
         minScale: widget.minScale,
         maxScale: widget.maxScale,
-        panLimit: widget.panLimit,
       );
-  }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _pageNumber = _pageController.initialPage + 1;
-    _isLoading = true;
-
-    print('object  = ==== = didChangeDependencies');
-    // _pages = [];
-    // _loadAllPages();
     _loadPage();
   }
 
-  _onZoomChanged(double scale) {
-    if (scale != 1.0) {
-      setState(() {
-        _swipeEnabled = false;
-      });
-    } else {
-      setState(() {
-        _swipeEnabled = true;
-      });
-    }
+  @override
+  void dispose() {
+    _isLoading.dispose();
+    _pageNumber.dispose();
+    _pages.dispose();
+    super.dispose();
   }
 
   _loadPage() async {
-    if (_pages[_pageNumber - 1] != null) {
+    if (_pages.value![_pageNumber.value - 1] != null) {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    _isLoading.value = true;
 
     final PDFPage data = await widget.document.get(
-      page: _pageNumber,
-      onZoomChanged: _onZoomChanged,
+      page: _pageNumber.value,
       zoomSteps: widget.zoomSteps,
       minScale: widget.minScale,
       maxScale: widget.maxScale,
       panLimit: widget.panLimit,
     );
 
-    _pages[_pageNumber - 1] = data;
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    _pages.value![_pageNumber.value - 1] = data;
+    _pages.value = List<PDFPage?>.from(_pages.value!);
+
+    _isLoading.value = false;
   }
 
   _animateToPage({int? page}) {
-    _pageController.animateToPage(page != null ? page : _pageNumber - 1, duration: animationDuration, curve: animationCurve);
+    _pageController.animateToPage(page ?? _pageNumber.value - 1, duration: animationDuration, curve: animationCurve);
   }
 
   _jumpToPage({int? page}) {
-    _pageController.jumpToPage(page != null ? page : _pageNumber - 1);
+    _pageController.jumpToPage(page ?? _pageNumber.value - 1);
   }
 
   Widget _drawIndicator() {
     Widget child = GestureDetector(
-        onTap: widget.showPicker && widget.document.count > 1 ? _pickPage : null,
-        child: Container(
-            padding: EdgeInsets.only(top: 4.0, left: 16.0, bottom: 4.0, right: 16.0),
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(4.0), color: widget.indicatorBackground),
-            child: Text("$_pageNumber/${widget.document.count}",
-                style: TextStyle(color: widget.indicatorText, fontSize: 16.0, fontWeight: FontWeight.w400))));
+      onTap: widget.showPicker && widget.document.count > 1 ? _pickPage : null,
+      child: Container(
+        padding: EdgeInsets.only(top: 4.0, left: 16.0, bottom: 4.0, right: 16.0),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(4.0), color: widget.indicatorBackground),
+        child: ValueListenableBuilder<int>(
+            valueListenable: _pageNumber,
+            builder: (_, int page, __) {
+              return Text(
+                "$page/${widget.document.count}",
+                style: TextStyle(
+                  color: widget.indicatorText,
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.w400,
+                ),
+              );
+            }),
+      ),
+    );
 
     switch (widget.indicatorPosition) {
       case IndicatorPosition.topLeft:
@@ -198,9 +189,9 @@ class _PDFViewerState extends State<PDFViewer> {
           return NumberPicker(
             minValue: 1,
             maxValue: widget.document.count,
-            value: _pageNumber,
+            value: _pageNumber.value,
             onChanged: (value) {
-              _pageNumber = value;
+              _pageNumber.value = value;
               _jumpToPage();
             },
           );
@@ -212,24 +203,37 @@ class _PDFViewerState extends State<PDFViewer> {
     return Scaffold(
       body: Stack(
         children: <Widget>[
-          PageView.builder(
-            physics: _swipeEnabled && widget.enableSwipeNavigation && !_isLoading ? null : NeverScrollableScrollPhysics(),
-            onPageChanged: (page) async {
-              setState(() {
-                _pageNumber = page + 1;
-              });
+          ValueListenableBuilder<bool>(
+            valueListenable: _isLoading,
+            builder: (_, bool load, __) {
+              return ValueListenableBuilder<List<PDFPage?>?>(
+                valueListenable: _pages,
+                builder: (_, List<PDFPage?>? p, __) {
+                  return PageView.builder(
+                    physics: widget.enableSwipeNavigation && !load ? null : NeverScrollableScrollPhysics(),
+                    onPageChanged: (page) async {
+                      _pageNumber.value = page + 1;
 
-              await _loadPage();
+                      await _loadPage();
 
-              widget.onPageChanged?.call(page);
+                      widget.onPageChanged?.call(page);
+                    },
+                    scrollDirection: widget.scrollDirection,
+                    controller: _pageController,
+                    itemCount: p!.length,
+                    itemBuilder: (context, index) =>
+                        p[index] == null ? Center(child: widget.progressIndicator ?? CircularProgressIndicator()) : p[index]!,
+                  );
+                },
+              );
             },
-            scrollDirection: widget.scrollDirection,
-            controller: _pageController,
-            itemCount: _pages.length,
-            itemBuilder: (context, index) =>
-                _pages[index] == null ? Center(child: widget.progressIndicator ?? CircularProgressIndicator()) : _pages[index]!,
           ),
-          (widget.showIndicator && !_isLoading) ? _drawIndicator() : Container(),
+          ValueListenableBuilder<bool>(
+            valueListenable: _isLoading,
+            builder: (_, bool load, __) {
+              return (widget.showIndicator && !load) ? _drawIndicator() : Container();
+            },
+          ),
         ],
       ),
       floatingActionButton: widget.showPicker && widget.document.count > 1
@@ -251,7 +255,7 @@ class _PDFViewerState extends State<PDFViewer> {
           ? widget.navigationBuilder != null
               ? widget.navigationBuilder!(
                   context,
-                  _pageNumber,
+                  _pageNumber.value,
                   widget.document.count,
                   _jumpToPage,
                   _animateToPage,
@@ -261,58 +265,101 @@ class _PDFViewerState extends State<PDFViewer> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
                       Expanded(
-                        child: IconButton(
-                          icon: Icon(Icons.first_page),
-                          tooltip: widget.tooltip.first,
-                          onPressed: _pageNumber == 1 || _isLoading
-                              ? null
-                              : () {
-                                  _pageNumber = 1;
-                                  _jumpToPage();
-                                },
+                        child: ValueListenableBuilder<bool>(
+                          valueListenable: _isLoading,
+                          child: Icon(Icons.first_page),
+                          builder: (_, bool load, Widget? child) {
+                            return ValueListenableBuilder(
+                                valueListenable: _pageNumber,
+                                builder: (_, int page, __) {
+                                  return IconButton(
+                                    icon: child!,
+                                    tooltip: widget.tooltip.first,
+                                    onPressed: page == 1 || load
+                                        ? null
+                                        : () {
+                                            _pageNumber.value = 1;
+                                            _jumpToPage();
+                                          },
+                                  );
+                                });
+                          },
                         ),
                       ),
                       Expanded(
-                        child: IconButton(
-                          icon: Icon(Icons.chevron_left),
-                          tooltip: widget.tooltip.previous,
-                          onPressed: _pageNumber == 1 || _isLoading
-                              ? null
-                              : () {
-                                  _pageNumber--;
-                                  if (1 > _pageNumber) {
-                                    _pageNumber = 1;
-                                  }
-                                  _animateToPage();
-                                },
+                        child: ValueListenableBuilder<bool>(
+                          valueListenable: _isLoading,
+                          child: Icon(Icons.chevron_left),
+                          builder: (_, bool load, Widget? child) {
+                            return ValueListenableBuilder<int>(
+                              valueListenable: _pageNumber,
+                              builder: (_, int page, __) {
+                                return IconButton(
+                                  icon: child!,
+                                  tooltip: widget.tooltip.previous,
+                                  onPressed: page == 1 || load
+                                      ? null
+                                      : () {
+                                          _pageNumber.value = _pageNumber.value - 1;
+                                          if (1 > _pageNumber.value) {
+                                            _pageNumber.value = 1;
+                                          }
+                                          _animateToPage();
+                                        },
+                                );
+                              },
+                            );
+                          },
                         ),
                       ),
                       widget.showPicker ? Expanded(child: Text('')) : SizedBox(width: 1),
                       Expanded(
-                        child: IconButton(
-                          icon: Icon(Icons.chevron_right),
-                          tooltip: widget.tooltip.next,
-                          onPressed: _pageNumber == widget.document.count || _isLoading
-                              ? null
-                              : () {
-                                  _pageNumber++;
-                                  if (widget.document.count < _pageNumber) {
-                                    _pageNumber = widget.document.count;
-                                  }
-                                  _animateToPage();
-                                },
+                        child: ValueListenableBuilder<bool>(
+                          valueListenable: _isLoading,
+                          child: Icon(Icons.chevron_right),
+                          builder: (_, bool load, Widget? child) {
+                            return ValueListenableBuilder<int>(
+                              valueListenable: _pageNumber,
+                              builder: (_, int page, __) {
+                                return IconButton(
+                                  icon: child!,
+                                  tooltip: widget.tooltip.next,
+                                  onPressed: page == widget.document.count || load
+                                      ? null
+                                      : () {
+                                          _pageNumber.value = _pageNumber.value + 1;
+                                          if (_pageNumber.value < 1) {
+                                            _pageNumber.value = 1;
+                                          }
+
+                                          _animateToPage();
+                                        },
+                                );
+                              },
+                            );
+                          },
                         ),
                       ),
                       Expanded(
-                        child: IconButton(
-                          icon: Icon(Icons.last_page),
-                          tooltip: widget.tooltip.last,
-                          onPressed: _pageNumber == widget.document.count || _isLoading
-                              ? null
-                              : () {
-                                  _pageNumber = widget.document.count;
-                                  _jumpToPage();
-                                },
+                        child: ValueListenableBuilder<bool>(
+                          valueListenable: _isLoading,
+                          child: Icon(Icons.last_page),
+                          builder: (_, bool load, Widget? child) {
+                            return ValueListenableBuilder<int>(
+                                valueListenable: _pageNumber,
+                                builder: (_, int page, __) {
+                                  return IconButton(
+                                    icon: child!,
+                                    tooltip: widget.tooltip.last,
+                                    onPressed: page == widget.document.count || load
+                                        ? null
+                                        : () {
+                                            _pageNumber.value = widget.document.count;
+                                            _jumpToPage();
+                                          },
+                                  );
+                                });
+                          },
                         ),
                       ),
                     ],
