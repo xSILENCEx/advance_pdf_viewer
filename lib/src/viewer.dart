@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:advance_pdf_viewer/advance_pdf_viewer.dart';
 import 'package:numberpicker/numberpicker.dart';
 
+import 'safe_value_notifier.dart';
+
 /// enum to describe indicator position
 enum IndicatorPosition { topLeft, topRight, bottomLeft, bottomRight }
 
@@ -85,12 +87,12 @@ class PDFViewer extends StatefulWidget {
 }
 
 class _PDFViewerState extends State<PDFViewer> {
-  final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(true);
-  final ValueNotifier<int> _pageNumber = ValueNotifier<int>(1);
+  final SafeValueNotifier<bool> _isLoading = SafeValueNotifier<bool>(true);
+  final SafeValueNotifier<int> _pageNumber = SafeValueNotifier<int>(1);
   final Duration animationDuration = Duration(milliseconds: 200);
   final Curve animationCurve = Curves.easeIn;
 
-  final ValueNotifier<List<PDFPage?>?> _pages = ValueNotifier<List<PDFPage?>?>(null);
+  final SafeValueNotifier<List<PDFPage?>?> _pages = SafeValueNotifier<List<PDFPage?>?>(null);
   late PageController _pageController;
 
   @override
@@ -221,8 +223,7 @@ class _PDFViewerState extends State<PDFViewer> {
                     scrollDirection: widget.scrollDirection,
                     controller: _pageController,
                     itemCount: p!.length,
-                    itemBuilder: (context, index) =>
-                        p[index] == null ? Center(child: widget.progressIndicator ?? CircularProgressIndicator()) : p[index]!,
+                    itemBuilder: (context, index) => p[index] == null ? Center(child: widget.progressIndicator ?? CircularProgressIndicator()) : p[index]!,
                   );
                 },
               );
