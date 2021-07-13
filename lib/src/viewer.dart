@@ -48,6 +48,7 @@ class PDFViewer extends StatefulWidget {
   final double? maxScale;
   final double? panLimit;
   final ValueChanged<int>? onPageChanged;
+  final Color? backgroundColor;
 
   final Widget Function(
     BuildContext,
@@ -81,6 +82,7 @@ class PDFViewer extends StatefulWidget {
     this.pickerButtonColor,
     this.pickerIconColor,
     this.onPageChanged,
+    this.backgroundColor,
   }) : super(key: key);
 
   _PDFViewerState createState() => _PDFViewerState();
@@ -203,6 +205,7 @@ class _PDFViewerState extends State<PDFViewer> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: widget.backgroundColor,
       body: Stack(
         children: <Widget>[
           ValueListenableBuilder<bool>(
