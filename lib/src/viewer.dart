@@ -96,15 +96,13 @@ class _PDFViewerState extends State<PDFViewer> {
   final Duration animationDuration = Duration(milliseconds: 200);
   final Curve animationCurve = Curves.easeIn;
 
-  final SafeValueNotifier<List<PDFPage?>?> _pages =
-      SafeValueNotifier<List<PDFPage?>?>(null);
+  final SafeValueNotifier<List<PDFPage?>?> _pages = SafeValueNotifier<List<PDFPage?>?>(null);
   late PageController _pageController;
 
   @override
   void initState() {
     super.initState();
-    _pages.value =
-        List<PDFPage?>.generate(widget.document.count, (index) => null);
+    _pages.value = List<PDFPage?>.generate(widget.document.count, (index) => null);
     _pageController = widget.controller ?? PageController();
     _pageNumber.value = _pageController.initialPage + 1;
 
@@ -123,6 +121,7 @@ class _PDFViewerState extends State<PDFViewer> {
     _isLoading.dispose();
     _pageNumber.dispose();
     _pages.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -148,8 +147,7 @@ class _PDFViewerState extends State<PDFViewer> {
   }
 
   _animateToPage({int? page}) {
-    _pageController.animateToPage(page ?? _pageNumber.value - 1,
-        duration: animationDuration, curve: animationCurve);
+    _pageController.animateToPage(page ?? _pageNumber.value - 1, duration: animationDuration, curve: animationCurve);
   }
 
   _jumpToPage({int? page}) {
@@ -181,9 +179,7 @@ class _PDFViewerState extends State<PDFViewer> {
           valueListenable: _pages,
           builder: (_, List<PDFPage?>? p, __) {
             return PageView.builder(
-              physics: widget.enableSwipeNavigation && !load
-                  ? null
-                  : NeverScrollableScrollPhysics(),
+              physics: widget.enableSwipeNavigation && !load ? null : NeverScrollableScrollPhysics(),
               onPageChanged: (page) async {
                 _pageNumber.value = page + 1;
 
@@ -194,11 +190,7 @@ class _PDFViewerState extends State<PDFViewer> {
               scrollDirection: widget.scrollDirection,
               controller: _pageController,
               itemCount: p!.length,
-              itemBuilder: (context, index) => p[index] == null
-                  ? Center(
-                      child: widget.progressIndicator ??
-                          CircularProgressIndicator())
-                  : p[index]!,
+              itemBuilder: (context, index) => p[index] == null ? Center(child: widget.progressIndicator ?? CircularProgressIndicator()) : p[index]!,
             );
           },
         );
@@ -212,11 +204,9 @@ class _PDFViewerState extends State<PDFViewer> {
           if (widget.showIndicator)
             ValueListenableBuilder<bool>(
               valueListenable: _isLoading,
-              builder: (_, bool load, __) =>
-                  load ? SizedBox.shrink() : _drawIndicator(),
+              builder: (_, bool load, __) => load ? SizedBox.shrink() : _drawIndicator(),
             ),
-          if (widget.useStackNavBar)
-            Align(alignment: Alignment.bottomCenter, child: _buildNavBar()),
+          if (widget.useStackNavBar) Align(alignment: Alignment.bottomCenter, child: _buildNavBar()),
         ],
       );
     }
@@ -239,8 +229,7 @@ class _PDFViewerState extends State<PDFViewer> {
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar:
-          !widget.useStackNavBar ? _buildNavBar() : const SizedBox.shrink(),
+      bottomNavigationBar: !widget.useStackNavBar ? _buildNavBar() : const SizedBox.shrink(),
     );
   }
 
@@ -248,11 +237,8 @@ class _PDFViewerState extends State<PDFViewer> {
     Widget child = GestureDetector(
       onTap: widget.showPicker && widget.document.count > 1 ? _pickPage : null,
       child: Container(
-        padding:
-            EdgeInsets.only(top: 4.0, left: 16.0, bottom: 4.0, right: 16.0),
-        decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(4.0),
-            color: widget.indicatorBackground),
+        padding: EdgeInsets.only(top: 4.0, left: 16.0, bottom: 4.0, right: 16.0),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(4.0), color: widget.indicatorBackground),
         child: ValueListenableBuilder<int>(
             valueListenable: _pageNumber,
             builder: (_, int page, __) {
@@ -284,120 +270,80 @@ class _PDFViewerState extends State<PDFViewer> {
 
   Widget _buildNavBar() {
     return (widget.showNavigation && widget.document.count > 1)
-        ? widget.navigationBuilder != null
-            ? widget.navigationBuilder!(context, _pageNumber.value,
-                widget.document.count, _jumpToPage, _animateToPage)
-            : BottomAppBar(
-                child: new Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Expanded(
-                      child: ValueListenableBuilder<bool>(
-                        valueListenable: _isLoading,
-                        child: Icon(Icons.first_page),
-                        builder: (_, bool load, Widget? child) {
-                          return ValueListenableBuilder(
-                              valueListenable: _pageNumber,
-                              builder: (_, int page, __) {
-                                return IconButton(
-                                  icon: child!,
-                                  tooltip: widget.tooltip.first,
-                                  onPressed: page == 1 || load
-                                      ? null
-                                      : () {
-                                          _pageNumber.value = 1;
-                                          _jumpToPage();
-                                        },
-                                );
-                              });
-                        },
-                      ),
-                    ),
-                    Expanded(
-                      child: ValueListenableBuilder<bool>(
-                        valueListenable: _isLoading,
-                        child: Icon(Icons.chevron_left),
-                        builder: (_, bool load, Widget? child) {
-                          return ValueListenableBuilder<int>(
-                            valueListenable: _pageNumber,
-                            builder: (_, int page, __) {
-                              return IconButton(
-                                icon: child!,
-                                tooltip: widget.tooltip.previous,
-                                onPressed: page == 1 || load
-                                    ? null
-                                    : () {
-                                        _pageNumber.value =
-                                            _pageNumber.value - 1;
-                                        if (1 > _pageNumber.value) {
-                                          _pageNumber.value = 1;
-                                        }
-                                        _animateToPage();
-                                      },
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                    widget.showPicker
-                        ? Expanded(child: Text(''))
-                        : SizedBox(width: 1),
-                    Expanded(
-                      child: ValueListenableBuilder<bool>(
-                        valueListenable: _isLoading,
-                        child: Icon(Icons.chevron_right),
-                        builder: (_, bool load, Widget? child) {
-                          return ValueListenableBuilder<int>(
-                            valueListenable: _pageNumber,
-                            builder: (_, int page, __) {
-                              return IconButton(
-                                icon: child!,
-                                tooltip: widget.tooltip.next,
-                                onPressed: page == widget.document.count || load
-                                    ? null
-                                    : () {
-                                        _pageNumber.value =
-                                            _pageNumber.value + 1;
-                                        if (_pageNumber.value < 1) {
-                                          _pageNumber.value = 1;
-                                        }
+        ? ValueListenableBuilder<int>(
+            valueListenable: _pageNumber,
+            builder: (_, int p, Widget? child) {
+              return ValueListenableBuilder<bool>(
+                  valueListenable: _isLoading,
+                  builder: (_, bool load, Widget? child) {
+                    return widget.navigationBuilder != null
+                        ? widget.navigationBuilder!(context, p, widget.document.count, _jumpToPage, _animateToPage)
+                        : BottomAppBar(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                Expanded(
+                                  child: IconButton(
+                                    icon: Icon(Icons.first_page),
+                                    tooltip: widget.tooltip.first,
+                                    onPressed: p == 1 || load
+                                        ? null
+                                        : () {
+                                            _pageNumber.value = 1;
+                                            _jumpToPage();
+                                          },
+                                  ),
+                                ),
+                                Expanded(
+                                  child: IconButton(
+                                    icon: Icon(Icons.chevron_left),
+                                    tooltip: widget.tooltip.previous,
+                                    onPressed: p == 1 || load
+                                        ? null
+                                        : () {
+                                            _pageNumber.value = _pageNumber.value - 1;
+                                            if (1 > _pageNumber.value) {
+                                              _pageNumber.value = 1;
+                                            }
+                                            _animateToPage();
+                                          },
+                                  ),
+                                ),
+                                widget.showPicker ? Expanded(child: Text('')) : SizedBox(width: 1),
+                                Expanded(
+                                  child: IconButton(
+                                    icon: Icon(Icons.chevron_right),
+                                    tooltip: widget.tooltip.next,
+                                    onPressed: p == widget.document.count || load
+                                        ? null
+                                        : () {
+                                            _pageNumber.value = _pageNumber.value + 1;
+                                            if (_pageNumber.value < 1) {
+                                              _pageNumber.value = 1;
+                                            }
 
-                                        _animateToPage();
-                                      },
-                              );
-                            },
+                                            _animateToPage();
+                                          },
+                                  ),
+                                ),
+                                Expanded(
+                                  child: IconButton(
+                                    icon: Icon(Icons.last_page),
+                                    tooltip: widget.tooltip.last,
+                                    onPressed: p == widget.document.count || load
+                                        ? null
+                                        : () {
+                                            _pageNumber.value = widget.document.count;
+                                            _jumpToPage();
+                                          },
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
-                        },
-                      ),
-                    ),
-                    Expanded(
-                      child: ValueListenableBuilder<bool>(
-                        valueListenable: _isLoading,
-                        child: Icon(Icons.last_page),
-                        builder: (_, bool load, Widget? child) {
-                          return ValueListenableBuilder<int>(
-                              valueListenable: _pageNumber,
-                              builder: (_, int page, __) {
-                                return IconButton(
-                                  icon: child!,
-                                  tooltip: widget.tooltip.last,
-                                  onPressed:
-                                      page == widget.document.count || load
-                                          ? null
-                                          : () {
-                                              _pageNumber.value =
-                                                  widget.document.count;
-                                              _jumpToPage();
-                                            },
-                                );
-                              });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              )
+                  });
+            },
+          )
         : const SizedBox.shrink();
   }
 }
