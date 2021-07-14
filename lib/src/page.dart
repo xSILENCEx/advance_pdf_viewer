@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
 import 'package:flutter/widgets.dart';
 
 /// A class to represent PDF page
