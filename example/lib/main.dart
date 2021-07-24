@@ -83,9 +83,10 @@ class _MyAppState extends State<MyApp> {
               : PDFViewer(
                   document: document,
                   zoomSteps: 1,
-                  useStackNavBar: true,
+                  // useStackNavBar: true,
                   showIndicator: false,
                   showPicker: false,
+                  fillWidth: true,
                   //uncomment below line to preload all pages
                   // lazyLoad: false,
                   // uncomment below line to scroll vertically

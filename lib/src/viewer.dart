@@ -50,6 +50,7 @@ class PDFViewer extends StatefulWidget {
   final ValueChanged<int>? onPageChanged;
   final Color? backgroundColor;
   final bool useStackNavBar;
+  final bool fillWidth;
 
   final Widget Function(
     BuildContext,
@@ -85,6 +86,7 @@ class PDFViewer extends StatefulWidget {
     this.onPageChanged,
     this.backgroundColor,
     this.useStackNavBar = false,
+    this.fillWidth = false,
   }) : super(key: key);
 
   _PDFViewerState createState() => _PDFViewerState();
@@ -111,6 +113,7 @@ class _PDFViewerState extends State<PDFViewer> {
         zoomSteps: widget.zoomSteps,
         minScale: widget.minScale,
         maxScale: widget.maxScale,
+        fillWidth: widget.fillWidth,
       );
 
     _loadPage();
@@ -138,6 +141,7 @@ class _PDFViewerState extends State<PDFViewer> {
       minScale: widget.minScale,
       maxScale: widget.maxScale,
       panLimit: widget.panLimit,
+      fillWidth: widget.fillWidth,
     );
 
     _pages.value![_pageNumber.value - 1] = data;

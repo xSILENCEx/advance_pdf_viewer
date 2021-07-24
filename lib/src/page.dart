@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
 /// A class to represent PDF page
@@ -17,6 +18,7 @@ class PDFPage extends StatefulWidget {
   final double? minScale;
   final double? maxScale;
   final double? panLimit;
+  final bool fillWidth;
 
   PDFPage(
     this.imgPath,
@@ -26,6 +28,7 @@ class PDFPage extends StatefulWidget {
     this.minScale,
     this.maxScale,
     this.panLimit,
+    this.fillWidth = false,
   });
 
   @override
@@ -36,19 +39,26 @@ class _PDFPageState extends State<PDFPage> {
   @override
   void didUpdateWidget(PDFPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.imgPath != widget.imgPath) {
+    if (oldWidget.imgPath != widget.imgPath || oldWidget.fillWidth != widget.fillWidth) {
       setState(() {});
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    Widget img = Image.file(
+      File(widget.imgPath),
+      alignment: widget.fillWidth ? Alignment.topCenter : Alignment.center,
+    );
+
+    if (widget.fillWidth) img = SingleChildScrollView(child: img);
+
     return ClipRect(
       child: InteractiveViewer(
-        maxScale: widget.maxScale ?? 3,
-        minScale: widget.minScale ?? 0.5,
-        boundaryMargin: EdgeInsets.all(MediaQuery.of(context).size.width),
-        child: Image.file(File(widget.imgPath)),
+        alignPanAxis: true,
+        maxScale: widget.maxScale ?? 5,
+        minScale: widget.minScale ?? 0.2,
+        child: img,
       ),
     );
   }
