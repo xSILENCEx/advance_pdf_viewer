@@ -273,7 +273,7 @@ class _PDFViewerState extends State<PDFViewer> {
   }
 
   Widget _buildNavBar() {
-    return (widget.showNavigation && widget.document.count > 1)
+    return (widget.showNavigation && widget.document.count > 0)
         ? ValueListenableBuilder<int>(
             valueListenable: _pageNumber,
             builder: (_, int p, Widget? child) {
