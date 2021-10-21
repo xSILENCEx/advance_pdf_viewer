@@ -69,7 +69,7 @@ class PDFDocument {
       var pageCount = await _channel.invokeMethod('getNumberOfPages', {'filePath': file.path});
       document.count = document.count = int.parse(pageCount);
     } catch (e) {
-      throw Exception('Error reading PDF!');
+      throw Exception('Error reading PDF! $e');
     }
     return document;
   }

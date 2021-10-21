@@ -10,9 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_cache_manager: ^3.0.1
+  flutter_cache_manager: ^3.1.2
   numberpicker: ^2.1.1
-  path_provider: ^2.0.1
+  path_provider: ^2.0.5
 
 dev_dependencies:
   flutter_test:

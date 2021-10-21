@@ -1,34 +1,36 @@
 package pt.tribeiro.flutter_plugin_pdf_viewer;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.pdf.PdfRenderer;
-import android.os.Environment;
 import android.os.ParcelFileDescriptor;
-import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.embedding.engine.plugins.activity.ActivityAware;
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
 import android.os.HandlerThread;
 import android.os.Process;
 import android.os.Handler;
 
+import androidx.annotation.NonNull;
+
 /**
  * FlutterPluginPdfViewerPlugin
  */
-public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
-    private static Registrar instance;
-    private HandlerThread handlerThread;
+public class FlutterPluginPdfViewerPlugin implements MethodCallHandler, FlutterPlugin , ActivityAware {
+    private static Context context;
+    //    private static Registrar instance;
     private Handler backgroundHandler;
     private final Object pluginLocker = new Object();
     private final String filePrefix = "FlutterPluginPdfViewer";
@@ -38,7 +40,7 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
      */
     public static void registerWith(Registrar registrar) {
         final MethodChannel channel = new MethodChannel(registrar.messenger(), "flutter_plugin_pdf_viewer");
-        instance = registrar;
+        context = registrar.context();
         channel.setMethodCallHandler(new FlutterPluginPdfViewerPlugin());
     }
 
@@ -46,7 +48,7 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
     public void onMethodCall(final MethodCall call, final Result result) {
         synchronized (pluginLocker) {
             if (backgroundHandler == null) {
-                handlerThread = new HandlerThread("flutterPdfViewer", Process.THREAD_PRIORITY_BACKGROUND);
+                HandlerThread handlerThread = new HandlerThread("flutterPdfViewer", Process.THREAD_PRIORITY_BACKGROUND);
                 handlerThread.start();
                 backgroundHandler = new Handler(handlerThread.getLooper());
             }
@@ -100,7 +102,7 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
 
     private boolean clearCacheDir() {
         try {
-            File directory = instance.context().getCacheDir();
+            File directory = context.getCacheDir();
             FilenameFilter myFilter = new FilenameFilter() {
                 @Override
                 public boolean accept(File dir, String name) {
@@ -131,7 +133,7 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
         File file;
         try {
             String fileName = String.format("%s-%d.png", fileNameOnly, page);
-            file = File.createTempFile(fileName, null, instance.context().getCacheDir());
+            file = File.createTempFile(fileName, null, context.getCacheDir());
             FileOutputStream out = new FileOutputStream(file);
             bmp.compress(Bitmap.CompressFormat.PNG, 100, out);
             out.flush();
@@ -154,8 +156,8 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
 
             PdfRenderer.Page page = renderer.openPage(--pageNumber);
 
-            double width = instance.activity().getResources().getDisplayMetrics().densityDpi * page.getWidth();
-            double height = instance.activity().getResources().getDisplayMetrics().densityDpi * page.getHeight();
+            double width = context.getResources().getDisplayMetrics().densityDpi * page.getWidth();
+            double height = context.getResources().getDisplayMetrics().densityDpi * page.getHeight();
             final double docRatio = width / height;
 
             width = 2048;
@@ -180,5 +182,36 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
         }
 
         return null;
+    }
+
+    @Override
+    public void onAttachedToEngine(@NonNull FlutterPlugin.FlutterPluginBinding binding) {
+        final MethodChannel channel = new MethodChannel(binding.getBinaryMessenger(), "flutter_plugin_pdf_viewer");
+        channel.setMethodCallHandler(new FlutterPluginPdfViewerPlugin());
+    }
+
+    @Override
+    public void onDetachedFromEngine(@NonNull FlutterPlugin.FlutterPluginBinding binding) {
+
+    }
+
+    @Override
+    public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
+        context = binding.getActivity();
+    }
+
+    @Override
+    public void onDetachedFromActivityForConfigChanges() {
+
+    }
+
+    @Override
+    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+        context = binding.getActivity();
+    }
+
+    @Override
+    public void onDetachedFromActivity() {
+
     }
 }
