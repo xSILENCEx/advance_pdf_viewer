@@ -89,7 +89,7 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler, FlutterP
     private String getNumberOfPages(String filePath) {
         File pdf = new File(filePath);
         try {
-            clearCacheDir();
+            // clearCacheDir();
             PdfRenderer renderer = new PdfRenderer(ParcelFileDescriptor.open(pdf, ParcelFileDescriptor.MODE_READ_ONLY));
             Bitmap bitmap;
             final int pageCount = renderer.getPageCount();

@@ -19,8 +19,16 @@ class _MyAppState extends State<MyApp> {
   }
 
   loadDocument() async {
-    document = await PDFDocument.fromAsset('assets/sample.pdf');
-
+    document = await PDFDocument.fromURL(
+      "https://img.linbingtutor.com/image/homework/origin/%E9%83%A8%E7%BC%96%E7%89%88%E5%B0%8F%E5%AD%A6%E8%AF%AD%E6%96%87-1-05-4-%E5%A4%A7%E8%BF%98%E6%98%AF%E5%B0%8F2v1.1.pdf?Expires=2226139197&OSSAccessKeyId=LTAIn0tvYJcRzlFk&Signature=ocJqA9e4pjFSJoFTZiCK1AB8nmw%3D",
+      /* cacheManager: CacheManager(
+          Config(
+            "customCacheKey",
+            stalePeriod: const Duration(days: 2),
+            maxNrOfCacheObjects: 10,
+          ),
+        ), */
+    );
     setState(() => _isLoading = false);
   }
 
